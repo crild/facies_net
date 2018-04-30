@@ -1,7 +1,7 @@
 # facies_net
 Software for detection of given facies
 
-Functions needed to run facies_net.py are contained in the folder facies_netfunc, logs hold TensorBoard data, and F3 holds trained models.
+Functions needed to run facies_net.py are contained in the folder facies_net_func, logs hold TensorBoard data, and F3 holds trained models.
 
 The user needs the F3 dataset in the same folder as facies_net.py, as well as classification in .pts files.
 
