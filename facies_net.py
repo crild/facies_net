@@ -52,7 +52,7 @@ pred_dict = {
     'num_class'     : len(train_dict['files']),     # number of classes to output
     'cord_syst'     : 'segy',   # Coordinate system used, default is 0,0. Set to 'segy' to give inputs in (inline,xline)
     'save_pred'     : True,    # Save the prediction as a segy-cube
-    'save_location' : 'test_prediction',       # file name for the saved prediction
+    'save_location' : 'predictions/test_prediction',       # file name for the saved prediction
     'pred_batch'    : 1        # number of traces used to make batches of mini-cubes that are stored in memory at once
     #'pred_batch' : train_dict['num_train_ex']//(pred_dict['section_edge'][5]-pred_dict['section_edge'][4])    #Suggested value
 }
