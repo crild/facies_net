@@ -46,14 +46,14 @@ im_idx = 10
 
 start_im, y = generator.data_generation(im_idx)
 
-save_or(start_im,name = None)
+save_or(start_im,name = 'images/Original_im')
 
 (filter_list, losses1) = features(keras_model,
                                  layer_name,
                                  iterations = 20,
                                  smoothing_par = 'GaussianBlur',
                                  inp_im = start_im,
-                                 name = 'conv2_start_im')
+                                 name = 'images/conv2_start_im')
 
 
 (filter_list, losses2) = features(keras_model,
@@ -61,7 +61,7 @@ save_or(start_im,name = None)
                                  iterations = 20,
                                  smoothing_par = 'GaussianBlur',
                                  inp_im = None,
-                                 name = 'conv2_start_gray')
+                                 name = 'images/conv2_start_gray')
 
 
 layer_name = 'attribute_layer'
@@ -71,14 +71,14 @@ layer_name = 'attribute_layer'
                                  iterations = 20,
                                  smoothing_par = 'GaussianBlur',
                                  inp_im = start_im,
-                                 name = 'attribute_start_im')
+                                 name = 'images/attribute_start_im')
 
 (filter_list, losses4) = features(keras_model,
                                  layer_name,
                                  iterations = 20,
                                  smoothing_par = 'GaussianBlur',
                                  inp_im = None,
-                                 name = 'attribute_start_gray')
+                                 name = 'images/attribute_start_gray')
 
 segy_obj = []
 
