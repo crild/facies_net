@@ -28,9 +28,9 @@ def normalize(x):
     return x / (K.sqrt(K.mean(K.square(x))) + K.epsilon())
 
 
-def smoothing(im, mode = 'None'):
+def smoothing(im, mode = None):
     # utility function to smooth an image
-    if mode == 'None':
+    if mode is None:
         return im
     elif mode == 'L2':
         # L2 norm
@@ -119,27 +119,57 @@ def save_image(kept_filters, keras_model, name = None):
 
 
 # save the original image to disk
-def save_or(img,name = None):
+def save_or(img,name = None,formatting = 'normalize'):
     # img: image to be saved to disk
 
     # Define some initial parameters
+    input_channels = 3
     margin = 5
     width = 3 * 61 + (3 - 1) * margin
     height = 61 + (1 - 1) * margin
-    stitched_im = -20*np.ones((height,width, 3)) # clim is [-127,127]
+
+    stitched_im = np.zeros((height,width,input_channels))
 
     # Iterate through the directions of the cube
     for k in range(3):
         # slice the 3D input into 2.5D (one slice from each plane)
         if k == 0:
-            im = np.transpose(img[0,30,:,:,:],(1,0,2))
+            im = img[0,30,:,:,:]
         elif k == 1:
-            im = np.transpose(img[0,:,30,:,:],(1,0,2))
+            im = img[0,:,30,:,:]
         elif k == 2:
-            im = np.transpose(img[0,:,:,30,:],(1,0,2))
+            im = img[0,:,:,30,:]
         else:
             print('Undefined scenario!')
-        stitched_im[0:61,(61 + margin) * k: (61 + margin) * k + 61,:] = im
+
+        # Make stratigraphic upwards direction up in the image
+        im = np.transpose(im,(1,0,2))
+
+        # Process the images
+        if formatting is None:
+            im2 = im
+
+        elif formatting == 'normalize':
+            # normalize tensor: center on 0., ensure std is 0.1
+            mn = im.mean()
+            stad = im.std()
+            im1 = ((im-mn)/(stad+1e-10))*0.1
+
+            # cast to rgb value range
+            im2 = np.clip(np.clip(im1+0.5, 0, 1)*255,0,255).astype('uint8')
+
+        elif formatting == 'RGBcast':
+            # cast to [0, 255]
+            maxima = np.amax(im)
+            minima = np.amin(im)
+            interv = maxima - minima
+            im1 = im - minima
+            im2 = (im1/interv)*255
+
+        else:
+            print('Illegal formatting string!')
+
+        stitched_im[0:61,(61 + margin) * k: (61 + margin) * k + 61,:] = im2
 
     # save the result to disk
     if name is None:
@@ -149,7 +179,6 @@ def save_or(img,name = None):
         name += '.png'
         imsave(name, stitched_im)
         print('file name is: ',name)
-
 
 
 

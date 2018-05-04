@@ -9,10 +9,13 @@
 ################################################################
 
 from __future__ import division, print_function
-import numpy as np
-from time import sleep
+
 import sys
 import keras.backend as K
+import numpy as np
+
+from scipy.misc import imsave
+from time import sleep
 
 from keras.models import Model, Sequential
 
@@ -69,10 +72,7 @@ class integrated_gradients:
         # Evaluate over all requested channels.
         for c in self.outchannels:
             # Get tensor that calculates gradient
-            if K.backend() == "tensorflow":
-                gradients = self.model.optimizer.get_gradients(self.model.output[:, c], self.model.input)
-            if K.backend() == "theano":
-                gradients = self.model.optimizer.get_gradients(self.model.output[:, c].sum(), self.model.input)
+            gradients = self.model.optimizer.get_gradients(self.model.output[:, c], self.model.input)
 
             # Build computational graph that computes the tensors given inputs
             self.get_gradients[c] = K.function(inputs=self.input_tensors, outputs=gradients)
@@ -132,12 +132,7 @@ class integrated_gradients:
             _input.append(s)
         _input.append(0)
 
-        if K.backend() == "tensorflow":
-            gradients = self.get_gradients[outc](_input)
-        elif K.backend() == "theano":
-            gradients = self.get_gradients[outc](_input)
-            if len(self.model.inputs) == 1:
-                gradients = [gradients]
+        gradients = self.get_gradients[outc](_input)
 
         explanation = []
         for i in range(len(gradients)):
@@ -173,3 +168,178 @@ class integrated_gradients:
             ret[s] = reference+(sample-reference)*(s*1.0/num_steps)
 
         return ret, num_steps, (sample-reference)*(1.0/num_steps)
+
+
+# Format processing of image
+def form_pros(im,formatting = 'normalize',clim = np.array([0, 255])):
+    # im: image to process,
+    # formatting: convention of formatting to use
+
+    # Process the images
+    if formatting is None:
+        im2 = im
+
+    elif formatting == 'normalize':
+        # normalize tensor: center on 0., ensure std is 0.1
+        mn = im.mean()
+        stad = im.std()
+        im1 = ((im-mn)/(stad+1e-10))*0.1
+        fac = clim[1]-clim[0]
+
+        # cast to rgb value range
+        im2 = np.clip(np.clip(im1+0.5, 0, 1)*fac+clim[0],clim[0],clim[1]).astype('uint8')
+
+    elif formatting == 'RGBcast':
+        # cast to [0, 255]
+        maxima = np.amax(im)
+        minima = np.amin(im)
+        interv = maxima - minima
+        im1 = im - minima
+        im2 = (im1/interv)*(clim[1]-clim[0])+clim[0]
+
+    else:
+        print('Illegal formatting string!')
+
+    return im2
+
+
+# Function to lay one image over the other to show attribution better
+def overlay(or_im, overlay_im, mode = 'red'):
+    # or_im: Orginal image to use as background
+    # overlay_im: image to use as the overlay
+    # mode: what type of overlay to use (red-scale,opacity, etc.)
+
+    # Get the image parts of the arrays
+    or_cube = or_im[0,:,:,:,0]
+    ol_cube = overlay_im[0,:,:,:,0]
+
+    # reformat image to optimize for scipy's expectations
+    or_cube = form_pros(or_cube)
+
+    # Check if the user is using multi-channel analysis
+    if mode == 'RB':
+        ol_cube_red = np.copy(ol_cube)
+        ol_cube_blue = np.copy(ol_cube)
+
+        cut_off = np.std(ol_cube)
+        ol_cube_red[ol_cube <= cut_off] = 0
+        ol_cube_blue[ol_cube >= -cut_off] = 0
+
+        ol_cube_blue = np.absolute(ol_cube_blue)
+        ol_cube_red_adj = form_pros(ol_cube_red)
+        ol_cube_blue_adj = form_pros(ol_cube_blue)
+
+        ol_re = np.copy(or_cube)
+        ol_gr = np.copy(or_cube)
+        ol_bl = np.copy(or_cube)
+
+        ol_re[ol_cube_red>0] = ol_cube_red_adj[ol_cube_red>0]
+        ol_bl[ol_cube_red>0] = 0
+
+        ol_re[ol_cube_blue>0] = 0
+        #ol_gr[ol_cube_blue>0] = 0 #[0.5*ol_gr[ol_cube_blue>0]].astype('uint8')
+        ol_bl[ol_cube_blue>0] = ol_cube_blue_adj[ol_cube_blue>0]
+
+        Re = ol_re
+        Gr = ol_gr
+        Bl = ol_bl
+
+        output_im = np.stack([Re,Gr,Bl], axis=-1)
+
+    elif mode == 'opacity':
+        ol_cube = form_pros(ol_cube)
+        output_im = np.stack([or_cube,or_cube,or_cube,ol_cube], axis=-1)
+
+    elif mode == 'red':
+        ol_cube = form_pros(ol_cube)
+        output_im = np.stack([ol_cube,or_cube,or_cube], axis=-1)
+
+    elif mode == 'green':
+        ol_cube = form_pros(ol_cube)
+        output_im = np.stack([or_cube,ol_cube,or_cube], axis=-1)
+
+    elif mode == 'blue':
+        ol_cube = form_pros(ol_cube)
+        output_im = np.stack([or_cube,or_cube,ol_cube], axis=-1)
+
+    else:
+        print('Uknown mode! Printing original image.')
+        output_im = np.stack([or_cube,or_cube,or_cube], axis=-1)
+
+    return output_im
+
+
+
+
+
+def save_overlay(int_grad,classes,inp_im,name=None,steps = 100):
+    # or_im: Orginal image to use as background
+    # overlay_im: image to use as the overlay
+    # mode: what type of overlay to use (red-scale,opacity, etc.)
+    # name: filename of the saved image
+
+    # Make the empty stiched image
+    # Define some initial parameters
+    margin = 5
+    width = classes * 61 + (classes - 1) * margin
+    height = (2*3) * 61 + ((2*3) - 1) * margin
+
+    # Put it together to make the image
+    stitched_im = np.zeros((height,width,3))
+
+    for i in range(classes):
+        # Make the explanation image
+        explanation = np.expand_dims(int_grad.explain(inp_im[0],outc=i,num_steps=steps,verbose=1),axis=0)
+
+        output_im = form_pros(explanation,formatting='normalize')
+
+        # Iterate through the directions of the cube
+        for k in range(3):
+            # slice the 3D input into 2.5D (one slice from each plane)
+            if k == 0:
+                im = output_im[0,30,:,:,:]
+            elif k == 1:
+                im = output_im[0,:,30,:,:]
+            elif k == 2:
+                im = output_im[0,:,:,30,:]
+            else:
+                print('Undefined scenario!')
+
+            # Make stratigraphic upwards direction up in the image
+            im = np.transpose(im,(1,0,2))
+
+            # Add it to the stitched image
+            stitched_im[(61 + margin) * k:(61 + margin) * k + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+
+        # Overlay the explanation over the initial image
+        output_im = overlay(inp_im,explanation,mode = 'RB')
+
+        # Iterate through the directions of the cube
+        for k in range(3):
+            # slice the 3D input into 2.5D (one slice from each plane)
+            if k == 0:
+                im = output_im[30,:,:,:]
+            elif k == 1:
+                im = output_im[:,30,:,:]
+            elif k == 2:
+                im = output_im[:,:,30,:]
+            else:
+                print('Undefined scenario!')
+
+            # Make stratigraphic upwards direction up in the image
+            im = np.transpose(im,(1,0,2))
+
+            # Add it to the stitched image
+            stitched_im[(61 + margin) * (k + 3):(61 + margin) * (k + 3) + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+
+
+    # save the result to disk
+    if name is None:
+        imsave('Overlay_im.png', stitched_im)
+        print('file name is: ','Overlay_im.png')
+    else:
+        name += '.png'
+        imsave(name, stitched_im)
+        print('file name is: ',name)
+
+    return stitched_im
