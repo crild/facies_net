@@ -9,6 +9,8 @@ from facies_net_func.segy_files import *
 from facies_net_func.attribution import *
 from facies_net_func.feature_vis import *
 
+# Set the RNG
+np.random.seed(7)
 
 # Define some parameters
 keras_model = keras.models.load_model('F3/test2.h5')
@@ -43,14 +45,14 @@ tr_params =        {'seis_spec'   : segy_obj,
 generator = ex_create(**tr_params)
 
 # image index fram tr_adr (must beless than steps in tr_params)
-im_idx = 50
+im_idx = 41 #26/40/41!!/44/48/50 good horizons, 27 fault
 
 test_im, y = generator.data_generation(im_idx)
 
-save_or(test_im,name = 'images/Original_im',formatting = 'normalize')
+save_or(test_im,name = 'images/Original_im'+str(im_idx),formatting = 'normalize')
 
 ig = integrated_gradients(keras_model)
 
-for i in range(9):
-    explanation = np.expand_dims(ig.explain(test_im[0],outc=i,num_steps=200,verbose=1),axis=0)
-    save_or(explanation,name = 'images/explanation'+str(i),formatting = 'normalize')
+save_overlay(ig,len(file_list),test_im,name='images/overlay'+str(im_idx),steps = 100)
+
+print('the actual label was:',y)

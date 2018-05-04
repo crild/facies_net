@@ -10,7 +10,7 @@ from facies_net_func.feature_vis import *
 
 # Define some parameters
 keras_model = keras.models.load_model('F3/test2.h5')
-layer_name = 'conv_layer2' #'attribute_layer'
+layer_name = 'pre-softmax_layer' #'conv_layer2' #'attribute_layer'
 cube_incr = 30
 segy_filename = ['F3_entire.segy']
 file_list = ['./class_addresses/multi_else_ilxl.pts','./class_addresses/multi_grizzly_ilxl.pts',
@@ -42,52 +42,20 @@ tr_params =        {'seis_spec'   : segy_obj,
 generator = ex_create(**tr_params)
 
 # image index fram tr_adr (must beless than steps in tr_params)
-im_idx = 10
+im_idx = 50
 
 start_im, y = generator.data_generation(im_idx)
 
 save_or(start_im,name = 'images/Original_im')
 
-(filter_list, losses1) = features(keras_model,
+(filter_list, losses) = features(keras_model,
                                  layer_name,
-                                 iterations = 20,
-                                 smoothing_par = 'GaussianBlur',
+                                 iterations = 100,
+                                 smoothing_par = None,
                                  inp_im = start_im,
-                                 name = 'images/conv2_start_im')
+                                 name = 'images/pre-softmax')
 
 
-(filter_list, losses2) = features(keras_model,
-                                 layer_name,
-                                 iterations = 20,
-                                 smoothing_par = 'GaussianBlur',
-                                 inp_im = None,
-                                 name = 'images/conv2_start_gray')
-
-
-layer_name = 'attribute_layer'
-
-(filter_list, losses3) = features(keras_model,
-                                 layer_name,
-                                 iterations = 20,
-                                 smoothing_par = 'GaussianBlur',
-                                 inp_im = start_im,
-                                 name = 'images/attribute_start_im')
-
-(filter_list, losses4) = features(keras_model,
-                                 layer_name,
-                                 iterations = 20,
-                                 smoothing_par = 'GaussianBlur',
-                                 inp_im = None,
-                                 name = 'images/attribute_start_gray')
-
-segy_obj = []
-
-np.set_printoptions(precision=3)
-print('Loss list1:')
-print(losses1)
-print('Loss list2:')
-print(losses2)
-print('Loss list3:')
-print(losses3)
-print('Loss list4:')
-print(losses4)
+np.set_printoptions(precision=2)
+print('Loss list:')
+print(losses)
