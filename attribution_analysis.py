@@ -1,6 +1,7 @@
 #### ------------- Test for attribution ------------
 
 # Import needed functions and modules
+import os
 import keras
 import matplotlib.pyplot as plt
 
@@ -45,14 +46,21 @@ tr_params =        {'seis_spec'   : segy_obj,
 generator = ex_create(**tr_params)
 
 # image index fram tr_adr (must beless than steps in tr_params)
-im_idx = 41 #26/40/41!!/44/48/50 good horizons, 27 fault
+im_idx = 50 #26/40/41!!/44/48/50 good horizons, 27 fault
 
 test_im, y = generator.data_generation(im_idx)
 
-save_or(test_im,name = 'images/Original_im'+str(im_idx),formatting = 'normalize')
+# Check if we need to make a new image directory
+if not os.path.exists('images/image'+str(im_idx)):
+    os.makedirs('images/image'+str(im_idx))
+
+save_or(test_im,name = 'images/image'+str(im_idx)+'/Original_im',formatting = 'normalize')
 
 ig = integrated_gradients(keras_model)
 
-save_overlay(ig,len(file_list),test_im,name='images/overlay'+str(im_idx),steps = 100)
+save_overlay(ig,len(file_list),test_im,name='images/image'+str(im_idx)+'/overlay',steps = 100, mosaic = 'rows')
 
-print('the actual label was:',y)
+
+labl = np.append(y,(np.nonzero(y)[1]*np.ones(y.shape)),axis = 0)
+np.savetxt(fname='images/image'+str(im_idx)+'/label',X = labl,fmt='%i')
+print('The actual label was:',int(labl[1,0]))

@@ -7,6 +7,8 @@ from facies_net_func.data_cond import *
 from facies_net_func.segy_files import *
 from facies_net_func.feature_vis import *
 
+# Set the RNG
+np.random.seed(7)
 
 # Define some parameters
 keras_model = keras.models.load_model('F3/test2.h5')
@@ -42,7 +44,7 @@ tr_params =        {'seis_spec'   : segy_obj,
 generator = ex_create(**tr_params)
 
 # image index fram tr_adr (must beless than steps in tr_params)
-im_idx = 50
+im_idx = 41 #26/40/41!!/44/48/50 good horizons, 27 fault
 
 start_im, y = generator.data_generation(im_idx)
 
