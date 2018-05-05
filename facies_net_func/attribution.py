@@ -124,7 +124,7 @@ class integrated_gradients:
 
         # Desired channel must be in the list of outputchannels
         assert outc in self.outchannels
-        if verbose: print("Explaning the "+str(self.outchannels[outc])+"th output.")
+        if verbose: print("Explaining the "+str(self.outchannels[outc])+"th output.")
 
         # For tensorflow backend
         _input = []
@@ -272,17 +272,35 @@ def overlay(or_im, overlay_im, mode = 'red'):
 
 
 
-def save_overlay(int_grad,classes,inp_im,name=None,steps = 100):
+def save_overlay(int_grad,classes,inp_im,name=None,steps = 100, mosaic = 'cols'):
     # or_im: Orginal image to use as background
     # overlay_im: image to use as the overlay
     # mode: what type of overlay to use (red-scale,opacity, etc.)
     # name: filename of the saved image
 
     # Make the empty stiched image
-    # Define some initial parameters
-    margin = 5
-    width = classes * 61 + (classes - 1) * margin
-    height = (2*3) * 61 + ((2*3) - 1) * margin
+    if mosaic == 'cols':
+        # Define some initial parameters
+        margin = 5
+        width = classes * 61 + (classes - 1) * margin
+        height = (2*3) * 61 + ((2*3) - 1) * margin
+
+    elif mosaic == 'rows':
+        # Define some initial parameters
+        margin = 5
+        width = (2*3) * 61 + ((2*3) - 1) * margin
+        height = (classes) * 61 + ((classes) - 1) * margin
+
+    elif mosaic == 'rows2':
+        # Define some initial parameters
+        margin = 5
+        width = 3 * 61 + (3 - 1) * margin
+        height = (2*classes) * 61 + ((2*classes) - 1) * margin
+
+    else:
+        print('Unknown mosaic input.')
+        return
+
 
     # Put it together to make the image
     stitched_im = np.zeros((height,width,3))
@@ -308,8 +326,17 @@ def save_overlay(int_grad,classes,inp_im,name=None,steps = 100):
             # Make stratigraphic upwards direction up in the image
             im = np.transpose(im,(1,0,2))
 
-            # Add it to the stitched image
-            stitched_im[(61 + margin) * k:(61 + margin) * k + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+            if mosaic == 'cols':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * k:(61 + margin) * k + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+            elif mosaic == 'rows':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * i: (61 + margin) * (i) + 61,(61 + margin) * k:(61 + margin) * k + 61,:] = im
+            elif mosaic == 'rows2':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * (2*i): (61 + margin) * (2*i) + 61,(61 + margin) * k:(61 + margin) * k + 61,:] = im
+
+
 
         # Overlay the explanation over the initial image
         output_im = overlay(inp_im,explanation,mode = 'RB')
@@ -329,8 +356,15 @@ def save_overlay(int_grad,classes,inp_im,name=None,steps = 100):
             # Make stratigraphic upwards direction up in the image
             im = np.transpose(im,(1,0,2))
 
-            # Add it to the stitched image
-            stitched_im[(61 + margin) * (k + 3):(61 + margin) * (k + 3) + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+            if mosaic == 'cols':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * (k + 3):(61 + margin) * (k + 3) + 61,(61 + margin) * i: (61 + margin) * i + 61,:] = im
+            elif mosaic == 'rows':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * (i): (61 + margin) * (i) + 61,(61 + margin) * (k + 3):(61 + margin) * (k + 3) + 61,:] = im
+            elif mosaic == 'rows2':
+                # Add it to the stitched image
+                stitched_im[(61 + margin) * (2*i + 1): (61 + margin) * (2*i + 1) + 61,(61 + margin) * k:(61 + margin) * k + 61,:] = im
 
 
     # save the result to disk
