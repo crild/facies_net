@@ -3,8 +3,9 @@
 # Make initial package imports
 import numpy as np
 import keras
+
 from tensorflow.python.keras._impl.keras.engine import InputSpec
-from tensorflow.python.keras._impl.keras import backend as K
+from tensorflow.python.keras import backend as K
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Conv3D, Dropout
 from keras.layers.normalization import BatchNormalization
@@ -52,7 +53,8 @@ class SpatialDropout3D(Dropout):
   def _get_noise_shape(self, inputs):
     input_shape = K.shape(inputs)
     if self.data_format == 'channels_first':
-      return (input_shape[0], input_shape[1], 1, 1, 1)
+      return (input_shape[0], input_shape[1],
+       1, 1, 1)
     elif self.data_format == 'channels_last':
       return (input_shape[0], 1, 1, 1, input_shape[4])
 
@@ -88,10 +90,10 @@ def make_model(cube_size = 65, num_channels = 1, num_classes = 2,\
     model.add(SpatialDropout3D(0.2))
     model.add(Activation('relu'))
 
-    model.add(Dense(50,name = 'dense_layer1'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.2))
-    model.add(Activation('relu'))
+    #model.add(Dense(50,name = 'dense_layer1'))
+    #model.add(BatchNormalization())
+    #model.add(Dropout(0.2))
+    #model.add(Activation('relu'))
 
     model.add(Dense(10,name = 'attribute_layer'))
     model.add(BatchNormalization())

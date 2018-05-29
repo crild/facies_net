@@ -141,15 +141,15 @@ def predicting(filename,seis_obj,keras_model,cube_incr,num_classes, section,\
                     print('Approximate time remaining of the prediction:',time_rem, ' sec.')
                 elif 300 < time_rem <= 60*60:
                     minutes = time_rem//60
-                    seconds = (time_rem%60)*(60/100)
+                    seconds = (time_rem%60)
                     print('Approximate time remaining of the prediction:',minutes,' min., ',seconds,' sec.')
                 elif 60*60 < time_rem <= 60*60*24:
                     hours = time_rem//(60*60)
-                    minutes = (time_rem%(60*60))*(1/60)*(60/100)
+                    minutes = (time_rem%(60*60))*(1/60)
                     print('Approximate time remaining of the prediction:',hours,' hrs., ',minutes,' min., ')
                 else:
                     days = time_rem//(24*60*60)
-                    hours = (time_rem%(24*60*60))*(1/60)*((1/60))*(24/100)
+                    hours = (time_rem%(24*60*60))*(1/60)*((1/60))
                     print('Approximate time remaining of the prediction:',days,' days, ',hours,' hrs., ')
 
 

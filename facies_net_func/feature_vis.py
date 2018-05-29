@@ -69,8 +69,14 @@ def save_image(kept_filters, keras_model, name = None):
     kept_filters.sort(key=lambda x: x[1], reverse=True)
     kept_filters = kept_filters[:24]
 
-    if len(kept_filters) < 24:
-        # we will stich the best 64 filters on a 8 x 8 grid.
+    if (len(kept_filters) <= 4):
+        # we will stich the best 64 filters on a 1 x n grid.
+        nj = 1 # height
+        ni = len(kept_filters)//nj # width
+        nk = 3 # depth
+
+    elif (len(kept_filters) > 4) and (len(kept_filters) < 24):
+        # we will stich the best filters on a 4 x n grid.
         nj = 4 # height
         ni = len(kept_filters)//nj # width
         nk = 3 # depth

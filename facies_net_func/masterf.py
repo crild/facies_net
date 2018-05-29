@@ -9,9 +9,8 @@ from facies_net_func.visualize import *
 ### ---- MASTER/MAIN function ----
 # Make an overall master function that takes inn some basic parameters,
 # trains, predicts, and visualizes the results from a model
-def master(segy_filename,inp_format,cube_incr,train_dict={},pred_dict={},mode = 'full'):
+def master(segy_filename,cube_incr,train_dict={},pred_dict={},mode = 'full'):
     # segy_filename: filename of the segy-cube to be imported (necessary for copying the segy-frame before writing a new segy)
-    # inp_format: input resolution, the formatting of the seismic cube (could be changed to 8-bit data)
     # cube_incr: number of increments included in each direction from the example to make a mini-cube
     # train_dict: Training parameters packaged as a Python dictionary
     # pred_dict: Prediciton parameters packaged as a Python dictionary
@@ -25,6 +24,11 @@ def master(segy_filename,inp_format,cube_incr,train_dict={},pred_dict={},mode = 
         # If there is a model given in the prediction dictionary continue training on this model
         if 'keras_model' in pred_dict:
             keras_model = pred_dict['keras_model']
+        else:
+            keras_model = None
+
+        if 'num_class' in pred_dict:
+            num_classes = pred_dict['num_class']
         else:
             keras_model = None
 
@@ -53,6 +57,7 @@ def master(segy_filename,inp_format,cube_incr,train_dict={},pred_dict={},mode = 
                             file_list = file_list,
                             cube_incr = cube_incr,
                             num_epochs = num_epochs,
+                            num_classes = num_classes,
                             num_examples = num_examples,
                             batch_size = batch_size,
                             val_split = val_split,
@@ -71,15 +76,15 @@ def master(segy_filename,inp_format,cube_incr,train_dict={},pred_dict={},mode = 
             print('Total time elapsed during training:',train_time, ' sec.')
         elif 300 < train_time <= 60*60:
             minutes = train_time//60
-            seconds = (train_time%60)*(60/100)
+            seconds = (train_time%60)
             print('Total time elapsed during training:',minutes,' min., ',seconds,' sec.')
         elif 60*60 < train_time <= 60*60*24:
             hours = train_time//(60*60)
-            minutes = (train_time%(60*60))*(1/60)*(60/100)
+            minutes = (train_time%(60*60))*(1/60)
             print('Total time elapsed during training:',hours,' hrs., ',minutes,' min., ')
         else:
             days = train_time//(24*60*60)
-            hours = (train_time%(24*60*60))*(1/60)*((1/60))*(24/100)
+            hours = (train_time%(24*60*60))*(1/60)*((1/60))
             print('Total time elapsed during training:',days,' days, ',hours,' hrs., ')
 
 
@@ -135,19 +140,19 @@ def master(segy_filename,inp_format,cube_incr,train_dict={},pred_dict={},mode = 
 
         # print to the user the total time spent training
         if pred_time <= 300:
-            print('Total time elapsed during prediction:',pred_time, ' sec.')
+            print('Total time elapsed during prediction and saving:',pred_time, ' sec.')
         elif 300 < pred_time <= 60*60:
             minutes = pred_time//60
-            seconds = (pred_time%60)*(60/100)
-            print('Total time elapsed during prediction:',minutes,' min., ',seconds,' sec.')
+            seconds = (pred_time%60)
+            print('Total time elapsed during prediction and saving:',minutes,' min., ',seconds,' sec.')
         elif 60*60 < pred_time <= 60*60*24:
             hours = pred_time//(60*60)
-            minutes = (pred_time%(60*60))*(1/60)*(60/100)
-            print('Total time elapsed during prediction:',hours,' hrs., ',minutes,' min., ')
+            minutes = (pred_time%(60*60))*(1/60)
+            print('Total time elapsed during prediction and saving:',hours,' hrs., ',minutes,' min., ')
         else:
             days = pred_time//(24*60*60)
-            hours = (pred_time%(24*60*60))*(1/60)*((1/60))*(24/100)
-            print('Total time elapsed during prediction:',days,' days, ',hours,' hrs., ')
+            hours = (pred_time%(24*60*60))*(1/60)*((1/60))
+            print('Total time elapsed during prediction and saving:',days,' days, ',hours,' hrs., ')
 
     else:
         # Make an empty variable for the prediction output

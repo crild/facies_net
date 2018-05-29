@@ -21,7 +21,7 @@ def adaptive_lr(input_int):
 
 
 # Make the network structure and outline, and train it
-def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,\
+def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,num_classes = None,\
                 num_examples = 50000,batch_size = 32,val_split = 0.2,\
                 opt_patience = 5,data_augmentation = False,keras_model = None,\
                 write_out = False,write_location = 'default_write'):
@@ -40,10 +40,12 @@ def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,\
 
     # Calculate som initial parameters
     cube_size = 2*cube_incr+1
-    num_classes = len(file_list)
     num_channels = segy_obj.cube_num
     tr_steps = (num_examples*(1-val_split))//batch_size
     val_steps = (num_examples//batch_size) - tr_steps
+
+    if num_classes == None:
+        num_classes = len(file_list)
 
     # Check if the user wants to make a new model, or train an existing input model
     if keras_model == None:
@@ -59,11 +61,29 @@ def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,\
 
     # Create arrays holding the adresses of training and validation data
     print('Making class-adresses')
-    tr_adr,val_adr = convert(file_list = file_list,
-                             save = False,
-                             savename = None,
-                             ex_adjust = True,
-                             val_split = val_split)
+    if int(len(file_list)) <= 1:
+        tr_adr = convert_segy(segy_name = file_list,
+                              save = False,
+                              savename = None,
+                              ex_adjust = True,
+                              val_split = 0,
+                              mode = 'xline')
+
+
+
+        val_adr = convert_segy(segy_name = file_list,
+                               save = False,
+                               savename = None,
+                               ex_adjust = True,
+                               val_split = 0,
+                               mode = 'iline')
+
+    else:
+        tr_adr,val_adr = convert(file_list = file_list,
+                                 save = False,
+                                 savename = None,
+                                 ex_adjust = True,
+                                 val_split = val_split)
     print('Finished making class-adresses')
 
     # Warn the user if they might be about to exhaust their dataset
@@ -72,25 +92,29 @@ def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,\
         print('Training on more than 90% of this can cause errors due to illegal examples!\n')
 
     # Define parameters for the generators
-    tr_params =        {'seis_spec'   : segy_obj,
-                        'adr_list'    : tr_adr,
-                        'cube_incr'   : cube_incr,
-                        'num_classes' : num_classes,
-                        'batch_size'  : batch_size,
-                        'steps'       : tr_steps,
-                        'print_info'  : True}
+    tr_params =        {'seis_spec'         : segy_obj,
+                        'adr_list'          : tr_adr,
+                        'cube_incr'         : cube_incr,
+                        'num_classes'       : num_classes,
+                        'batch_size'        : batch_size,
+                        'steps'             : tr_steps,
+                        'print_info'        : True,
+                        'data_augmentation' : data_augmentation}
 
-    val_params =        {'seis_spec'  : segy_obj,
-                        'adr_list'    : val_adr,
-                        'cube_incr'   : cube_incr,
-                        'num_classes' : num_classes,
-                        'batch_size'  : batch_size,
-                        'steps'       : val_steps}
+    val_params =        {'seis_spec'        : segy_obj,
+                        'adr_list'          : val_adr,
+                        'cube_incr'         : cube_incr,
+                        'num_classes'       : num_classes,
+                        'batch_size'        : batch_size,
+                        'steps'             : val_steps,
+                        'print_info'        : False,
+                        'data_augmentation' : ['False']}
 
 
     # Initiate the example generators
     tr_generator = ex_create(**tr_params)
     val_generator = ex_create(**val_params)
+
 
     # Define some initial parameters, and the early stopping and adaptive learning rate callback
     early_stopping  = EarlyStopping(monitor='acc', patience=opt_patience)
@@ -102,11 +126,18 @@ def train_model(segy_obj,file_list,cube_incr,num_epochs = 20,\
                                   #embeddings_metadata=None)
 
 
+
+    # Give extra weight to a given class(by indexes):
+    weight_dict = {0:1,
+                   1:5,
+                   2:1}
+
     # Run the model training
     history = model.fit_generator(generator = tr_generator,
                                   validation_data = val_generator,
                                   callbacks=[early_stopping, tensor_board],
                                   epochs=num_epochs,
+                                  class_weight = weight_dict,
                                   shuffle=False)
 
     # Print the training summary
