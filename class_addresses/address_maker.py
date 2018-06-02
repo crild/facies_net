@@ -16,6 +16,11 @@ def data_creator(corner_coords,sample_rates,save_name):
     # Define total section counter:
     sec_len = 0
 
+    # Make sure the corner coordinates are within pixels
+    corner_coords[:,:,0] = np.floor(corner_coords[:,:,0]/inline_step)*inline_step
+    corner_coords[:,:,1] = np.floor(corner_coords[:,:,1]/xline_step)*xline_step
+    corner_coords[:,:,2] = np.floor(corner_coords[:,:,2]/time_step)*time_step
+
     arr = np.empty((0,3))
 
     for corner_coord in corner_coords:
@@ -37,8 +42,6 @@ def data_creator(corner_coords,sample_rates,save_name):
                 j = int((xl - corner_coord[0,1])//xline_step)
                 for tim in t_range:
                     k = int((tim - corner_coord[0,2])//time_step)
-                    print(i,j,k)
-                    print(xline_length,time_length)
                     out_array[i*xline_length*time_length+j*time_length+k] = [inl,xl,tim]
 
         arr = np.append(arr,out_array,axis = 0)
@@ -48,15 +51,15 @@ def data_creator(corner_coords,sample_rates,save_name):
 
 
 # Define the function parameters
-top_left1 = [100,200,44.4]
-bot_right1 = [106,200,52.4]
+top_left1 = [6960,40858,1912]
+bot_right1 = [8014,40858,3886]
 
-top_left2 = [88,100,44.4]
-bot_right2 = [96,100,52.4]
+top_left2 = [7080,40858,566]
+bot_right2 = [7604,40858,1098]
 
-samp_rt = np.array([2,2,4])
+samp_rt = np.array([1,1,4])
 
-name = 'test'
+name = 'Other_ilxl'
 
 # Set the parameters correctly and run the function
 c_cord = np.array([[top_left1,bot_right1],
