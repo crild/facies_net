@@ -4,6 +4,7 @@ import math
 import numpy as np
 
 from facies_net_func.prediction import *
+from facies_net_func.fast import *
 
 from matplotlib import gridspec
 
@@ -59,7 +60,7 @@ def visualization(filename,seis_obj,keras_model,cube_incr,section_edge,xline_ref
         xline_ref = (xline_ref - seis_obj.xl_start)//seis_obj.xl_step
 
     # Make the prediction
-    pred = predicting(filename=filename,
+    pred = predicting_fast(filename=filename,
                       seis_obj=seis_obj,
                       keras_model=keras_model,
                       cube_incr=cube_incr,
