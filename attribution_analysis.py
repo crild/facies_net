@@ -14,11 +14,11 @@ from facies_net_func.feature_vis import *
 np.random.seed(7)
 
 # Define some parameters
-end_str = 'baseline'
-keras_model = keras.models.load_model('Hoop/25_epochs_50000_examples2_'+ end_str +'.h5')
+end_str = 'Mirror2T'
+keras_model = keras.models.load_model('F3/10_epochs_80000_examples_2T.h5')
 cube_incr = 30
-segy_filename = ['Hoop_crop2.sgy']
-file_list =     ['Facies2.sgy']
+segy_filename = ['F3_entire.segy']
+file_list =     ['F3_facies.segy']
                 #['./class_addresses/Snadd_ilxl.pts',
                 # './class_addresses/Other_ilxl.pts'] # list of names of class-adresses
 
@@ -28,10 +28,11 @@ segy_obj = segy_reader(segy_filename)
 print('Making class-adresses')
 if int(len(file_list)) <= 1:
     tr_adr,val_adr = convert_segy(segy_name = file_list,
-                                  save = False,
-                                  savename = None,
-                                  ex_adjust = True,
-                                  val_split = 0.3)
+                          save = False,
+                          savename = None,
+                          ex_adjust = True,
+                          val_split = 0.3,
+                          mode = 'xline')
 else:
     tr_adr,val_adr = convert(file_list = file_list,
                              save = False,
@@ -40,11 +41,13 @@ else:
                              val_split = 0.3)
 print('Finished making class-adresses')
 
+print(tr_adr)
+
 # Define parameters for the generators
 tr_params =        {'seis_spec'   : segy_obj,
                     'adr_list'    : tr_adr,
                     'cube_incr'   : cube_incr,
-                    'num_classes' : 5, #len(file_list),
+                    'num_classes' : 2, #len(file_list),
                     'batch_size'  : 1,
                     'steps'       : 100,
                     'print_info'  : True}
@@ -52,7 +55,7 @@ tr_params =        {'seis_spec'   : segy_obj,
 generator = ex_create(**tr_params)
 
 # image index fram tr_adr (must beless than steps in tr_params)
-im_idx = 1 #26/40/41!!/44/48/50 good horizons, 27 fault
+im_idx = 4 #26/40/41!!/44/48/50 good horizons, 27 fault
 
 test_im, y = generator.data_generation(im_idx)
 
